@@ -1,10 +1,11 @@
-// Global variable declarations
 let audioContext;
+let analyser 
 const audioBuffers = {};
 const sources = {};
 const gainNodes = {};
-const bpm = 140; // Beats per minute, change as necessary
-const beatsPerBar = 4; // Common time
+const panNodes = {};
+const bpm = 140;  // Beats per minute, change as necessary
+const beatsPerBar = 4;  // Common time
 const secondsPerBeat = 60 / bpm;
 
 // Function to load an audio file and store it in audioBuffers
@@ -25,10 +26,15 @@ function loadAudio(filename, key) {
 
 // Initialize audio files and context on user interaction
 function initAudio() {
+
     if (!audioContext) {
+        // Create the AudioContext now
         audioContext = new AudioContext();
     }
-
+    if (!window.analyser) {
+        window.analyser = audioContext.createAnalyser();
+        window.analyser.fftSize = 2048;  // Set the FFT size
+    }
     if (audioContext.state === "suspended") {
         audioContext.resume().then(() => {
             updateBeatIndicator(); // Start the beat indicator when audio is resumed
@@ -60,27 +66,41 @@ function scheduleTrackStart(trackKey) {
     playTrack(trackKey, startTime);
 }
 
+
 function playTrack(trackKey, startTime) {
     const source = audioContext.createBufferSource();
     source.buffer = audioBuffers[trackKey];
     source.loop = true;
 
-    // Check if the GainNode already exists, if not, create it
     if (!gainNodes[trackKey]) {
-        gainNodes[trackKey] = audioContext.createGain(); // Create a new GainNode
-        gainNodes[trackKey].connect(audioContext.destination);
+        gainNodes[trackKey] = audioContext.createGain();
+        // The panner should be connected before the gain node to the destination
+        if (!panNodes[trackKey]) {
+            panNodes[trackKey] = new StereoPannerNode(audioContext);
+            gainNodes[trackKey].connect(panNodes[trackKey]);
+            panNodes[trackKey].connect(window.analyser);
+            window.analyser.connect(audioContext.destination);
+        }
     }
 
-    // Get the current volume setting from the slider
+    // Connect the source to the GainNode, not directly to the PanNode
+    source.connect(gainNodes[trackKey]);
+
+    // Set initial volume and panning from sliders
     let volumeSlider = document.getElementById(trackKey + '-volume');
     gainNodes[trackKey].gain.value = volumeSlider.value;
 
-    // Connect the source to the GainNode
-    source.connect(gainNodes[trackKey]);
+    let panSlider = document.getElementById(trackKey + '-pan');
+    panNodes[trackKey].pan.value = parseFloat(panSlider.value);
 
-    // Start the source at the scheduled time
     source.start(startTime);
     sources[trackKey] = source;
+}
+
+function setPan(track, panValue) {
+    if (panNodes[track]) {
+        panNodes[track].pan.value = panValue;
+    }
 }
 
 
@@ -125,11 +145,41 @@ function updateBeatIndicator() {
     setTimeout(updateBeatIndicator, nextUpdateDelay * 1000);
 }
 
+function setupVisualizer() {
+    const canvas = document.getElementById('visualizer');
+    const ctx = canvas.getContext('2d');
+    const bufferLength = window.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    function draw() {
+        requestAnimationFrame(draw);
+        window.analyser.getByteFrequencyData(dataArray);
+
+        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let barWidth = (canvas.width / bufferLength) * 2.5;
+        let barHeight;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+            barHeight = dataArray[i]*2;
+            ctx.fillStyle = 'rgb(' + (barHeight + 100) + ', 50, 50)';
+            ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+
+            x += barWidth + 1;
+        }
+    }
+
+    draw();
+}
+
 
 // Initialize the beat indicator after user interaction
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     startBtn.addEventListener('click', () => {
         initAudio();
+        setupVisualizer();
     });
 });
