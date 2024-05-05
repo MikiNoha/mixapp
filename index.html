@@ -13,25 +13,45 @@
         <input type="range" id="kick-volume" min="0" max="1" step="0.01" value="1" oninput="setVolume('kick', this.value)">
         <label for="kick-pan">Kick Pan:</label>
         <input type="range" id="kick-pan" min="-1" max="1" step="0.1" value="0" oninput="setPan('kick', parseFloat(this.value))">
+        <button onclick="toggleFilter('lowpass', 'kick')">Toggle Low Pass</button>
+        <button onclick="toggleFilter('highpass', 'kick')">Toggle High Pass</button>
+    
     </div>
     <div>
         <label for="bass-volume">Bass Volume:</label>
         <input type="range" id="bass-volume" min="0" max="1" step="0.01" value="1" oninput="setVolume('bass', this.value)">
         <label for="bass-pan">Bass Pan:</label>
         <input type="range" id="bass-pan" min="-1" max="1" step="0.1" value="0" oninput="setPan('bass', parseFloat(this.value))">
+        <button onclick="toggleFilter('lowpass', 'bass')">Toggle Low Pass</button>
+        <button onclick="toggleFilter('highpass', 'bass')">Toggle High Pass</button>
+    
     </div>
     <div>
         <label for="ukulele-volume">Ukulele Volume:</label>
         <input type="range" id="ukulele-volume" min="0" max="1" step="0.01" value="1" oninput="setVolume('ukulele', this.value)">
         <label for="ukulele-pan">Ukulele Pan:</label>
         <input type="range" id="ukulele-pan" min="-1" max="1" step="0.1" value="0" oninput="setPan('ukulele', parseFloat(this.value))">
+        <button onclick="toggleFilter('lowpass', 'ukulele')">Toggle Low Pass</button>
+        <button onclick="toggleFilter('highpass', 'ukulele')">Toggle High Pass</button>
+    
     </div>
     <div>
         <label for="synth-volume">Synth Volume:</label>
         <input type="range" id="synth-volume" min="0" max="1" step="0.01" value="1" oninput="setVolume('synth', this.value)">
         <label for="synth-pan">Synth Pan:</label>
         <input type="range" id="synth-pan" min="-1" max="1" step="0.1" value="0" oninput="setPan('synth', parseFloat(this.value))">
+        <button onclick="toggleFilter('lowpass', 'synth')">Toggle Low Pass</button>
+        <button onclick="toggleFilter('highpass', 'synth')">Toggle High Pass</button>
+    
     </div>
+
+    <div id="master-controls">
+        <label>Master Volume:</label>
+        <input type="range" id="master-volume" min="0" max="1" step="0.01" value="1" onchange="setMasterVolume(this.value)">
+        <button onclick="toggleMasterFilter('lowpass')">Toggle Low Pass</button>
+        <button onclick="toggleMasterFilter('highpass')">Toggle High Pass</button>
+    </div>
+    
     <div id="beatIndicator">Beat: 0</div>
     <button id="start-btn">Start Audio</button>
     <div>
@@ -41,8 +61,12 @@
     <button onclick="toggleTrackPlayback('synth')">Toggle Synth</button>     
     </div>
     
+    <div style="display: flex; flex-direction: column; align-items: center;">
+    <canvas id="visualizer" width="800" height="300"></canvas>
+    <canvas id="master-visualizer" width="800" height="300"></canvas>    
+    </div>
     
-    <canvas id="visualizer" width="640" height="300"></canvas>
+
 
 
 
