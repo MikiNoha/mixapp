@@ -367,6 +367,7 @@ function toggleMasterFilter(type) {
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     startBtn.addEventListener('click', () => {
+        document.getElementById('intro-modal').style.display = 'none';
         initAudio();
         setupMasterControls();
         setupVisualizer();
