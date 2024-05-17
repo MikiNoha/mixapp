@@ -375,3 +375,71 @@ document.addEventListener('DOMContentLoaded', () => {
         
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const filterButtons = document.querySelectorAll('button.filter-button');
+    const toggleTrackButtons = document.querySelectorAll('button.toggle-track');
+    const sliders = document.querySelectorAll('input[type="range"]');
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            this.classList.toggle('active');
+        });
+    });
+
+    toggleTrackButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            this.classList.toggle('active');
+        });
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', function () {
+        // Reset all sliders to default values
+        sliders.forEach(slider => {
+            if (slider.classList.contains('vertical')) {
+                slider.value = 1; // Default volume value
+            } else if (slider.classList.contains('horizontal')) {
+                slider.value = 0; // Default pan value
+            }
+            // Trigger the input event to ensure any associated functions are called
+            slider.dispatchEvent(new Event('input'));
+        });
+
+        // Turn off all filters and remove active class from filter buttons
+        filterButtons.forEach(button => {
+            if (button.classList.contains('active')) {
+                button.classList.remove('active');
+                // Determine filter type and track based on button's onclick attribute
+                const filterInfo = button.getAttribute('onclick').match(/toggleFilter\('(\w+)', '(\w+)'\)/);
+                if (filterInfo) {
+                    const filterType = filterInfo[1];
+                    const trackId = filterInfo[2];
+                    toggleFilter(filterType, trackId);
+                } else {
+                    // Handle master filters
+                    const masterFilterInfo = button.getAttribute('onclick').match(/toggleMasterFilter\('(\w+)'\)/);
+                    if (masterFilterInfo) {
+                        const masterFilterType = masterFilterInfo[1];
+                        toggleMasterFilter(masterFilterType);
+                    }
+                }
+            }
+        });
+    });
+
+    document.getElementById('turn-off-tracks-btn').addEventListener('click', function () {
+        // Turn off all tracks that are currently on and remove active class from toggle track buttons
+        toggleTrackButtons.forEach(button => {
+            if (button.classList.contains('active')) {
+                button.classList.remove('active');
+                const trackId = button.getAttribute('onclick').match(/toggleTrackPlayback\('(\w+)'\)/)[1];
+                toggleTrackPlayback(trackId);
+            }
+        });
+    });
+});
+
+
+
+
+
