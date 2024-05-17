@@ -10,11 +10,11 @@ const sources = {};
 const gainNodes = {};
 const panNodes = {};
 
-const bpm = 140;  // Beats per minute, change as necessary
-const beatsPerBar = 4;  // Common time
+const bpm = 140;
+const beatsPerBar = 4; 
 const secondsPerBeat = 60 / bpm;
 
-// Function to load an audio file and store it in audioBuffers
+
 function loadAudio(filename, key) {
     fetch(`audio/${filename}`)
         .then(response => response.arrayBuffer())
@@ -30,23 +30,23 @@ function loadAudio(filename, key) {
     .catch(e => console.error(e));
 }
 
-// Initialize audio files and context on user interaction
+
 function initAudio() {
     if (!audioContext) {
-        // Create the AudioContext now
+
         audioContext = new AudioContext();
     }
     if (!window.analysers) {
-        window.analysers = {}; // Create an empty object to store analysers for each track
+        window.analysers = {}; 
     }
 
     if (audioContext.state === "suspended") {
         audioContext.resume().then(() => {
-            updateBeatIndicator(); // Start the beat indicator when audio is resumed
+            updateBeatIndicator(); 
         });
     }
 
-    // Load files only if they have not been loaded yet
+
     if (Object.keys(audioBuffers).length === 0) {
         loadAudio('kick.wav', 'kick');
         loadAudio('bass.wav', 'bass');
@@ -80,12 +80,12 @@ const highPassNodes = {};
 function setupFilters(trackKey) {
     const lowPass = audioContext.createBiquadFilter();
     lowPass.type = 'lowpass';
-    lowPass.frequency.setValueAtTime(22050, audioContext.currentTime); // Start fully open
+    lowPass.frequency.setValueAtTime(22050, audioContext.currentTime);
     lowPass.Q.setValueAtTime(1, audioContext.currentTime);
 
     const highPass = audioContext.createBiquadFilter();
     highPass.type = 'highpass';
-    highPass.frequency.setValueAtTime(0, audioContext.currentTime); // Start fully open
+    highPass.frequency.setValueAtTime(0, audioContext.currentTime);
     highPass.Q.setValueAtTime(1, audioContext.currentTime);
 
     lowPassNodes[trackKey] = lowPass;
@@ -100,7 +100,7 @@ function playTrack(trackKey, startTime) {
     source.buffer = audioBuffers[trackKey];
     source.loop = true;
 
-    // Set up filters and nodes for each track
+
     const { lowPass, highPass } = setupFilters(trackKey);
 
     if (!gainNodes[trackKey]) {
@@ -113,22 +113,21 @@ function playTrack(trackKey, startTime) {
         window.analysers[trackKey] = audioContext.createAnalyser();
     }
 
-    // Connect source through track-specific processing
     source.connect(lowPass);
     lowPass.connect(highPass);
     highPass.connect(gainNodes[trackKey]);
     gainNodes[trackKey].connect(panNodes[trackKey]);
 
-    // Connect each track's pan node to its analyser BEFORE master processing
+ 
     panNodes[trackKey].connect(window.analysers[trackKey]);
-    window.analysers[trackKey].connect(masterHighPass); // Now the analyser will capture individual track data
+    window.analysers[trackKey].connect(masterHighPass); 
 
-    // Continue with master processing
+
     masterHighPass.connect(masterLowPass);
     masterLowPass.connect(masterGainNode);
     masterGainNode.connect(audioContext.destination);
 
-    // Start the source
+
     source.start(startTime);
     sources[trackKey] = source;
 }
@@ -156,14 +155,14 @@ function scheduleTrackStop(trackKey) {
 
 function stopTrack(trackKey, stopTime) {
     if (sources[trackKey]) {
-        // Calculate the delay needed before disconnecting, based on stopTime
-        let disconnectDelay = (stopTime - audioContext.currentTime) * 1000; // Convert to milliseconds
+        
+        let disconnectDelay = (stopTime - audioContext.currentTime) * 1000; 
         sources[trackKey].stop(stopTime);
         
-        // Set a timeout to disconnect the node after audio has stopped
+
         setTimeout(() => {
-            sources[trackKey].disconnect(); // Disconnect after playback has stopped
-            sources[trackKey] = null; // Optionally clear the source
+            sources[trackKey].disconnect(); 
+            sources[trackKey] = null; 
         }, disconnectDelay);
     }
 }
@@ -181,7 +180,7 @@ function updateBeatIndicator() {
     let currentBeat = Math.floor(currentTime / secondsPerBeat) % beatsPerBar + 1;
     document.getElementById('beatIndicator').innerText = `Beat: ${currentBeat}`;
 
-    // Correct calculation for the next update to precisely align with the next beat
+    
     let nextUpdateDelay = secondsPerBeat - (currentTime % secondsPerBeat);
     setTimeout(updateBeatIndicator, nextUpdateDelay * 1000);
 }
@@ -189,53 +188,53 @@ function updateBeatIndicator() {
 function setupVisualizer() {
     const canvas = document.getElementById('visualizer');
     const ctx = canvas.getContext('2d');
-    const trackKeys = Object.keys(audioBuffers); // Assuming you have an equivalent list of track keys
-    const colors = ['rgb(255, 0, 0)', 'rgb(0, 255, 0)', 'rgb(0, 0, 255)', 'rgb(255, 255, 0)']; // Colors for each track
+    const trackKeys = Object.keys(audioBuffers); 
+    const colors = ['rgb(255, 0, 0)', 'rgb(0, 255, 0)', 'rgb(0, 0, 255)', 'rgb(255, 255, 0)']; 
 
     trackKeys.forEach(key => {
         if (!window.analysers[key]) {
             window.analysers[key] = audioContext.createAnalyser();
             window.analysers[key].fftSize = 2048;
-            // Assuming that panNodes[key] properly exists and connects here
+          
             if (panNodes[key]) {
                 panNodes[key].connect(window.analysers[key]);
             }
-            // window.analysers[key].connect(audioContext.destination);  // This should only be for visualizing, not audio output
+            
         }
     });
 
     function draw() {
         requestAnimationFrame(draw);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas before drawing new frame
+        ctx.clearRect(0, 0, canvas.width, canvas.height);  
     
         trackKeys.forEach((key, index) => {
             if (!window.analysers[key]) {
                 console.error(`Analyser for track ${key} is not defined.`);
-                return;  // Skip this iteration if the analyser is not defined
+                return; 
             }
             
             const analyser = window.analysers[key];
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);  // Get frequency data
+            analyser.getByteFrequencyData(dataArray);  
             
 
             let barWidth = (canvas.width / bufferLength) * 2.5;
             let barHeight;
-            let x = 0;  // Initial x position for bars
+            let x = 0; 
     
             for (let i = 0; i < bufferLength; i++) {
-                barHeight = (dataArray[i]) / 1,5   ;  // Scale the bar height * masterGainNode.gain.value
-                ctx.fillStyle = colors[index % colors.length];  // Choose color based on track
-                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  // Draw the bar
+                barHeight = (dataArray[i]) / 1,5   ;  
+                ctx.fillStyle = colors[index % colors.length]; 
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  
     
-                x += barWidth + 1;  // Move to the next bar position
+                x += barWidth + 1; 
             }
         });
     }
     
 
-    draw(); // Start the visualization loop
+    draw();
 }
 
 function setupMasterVisualizer() {
@@ -247,32 +246,29 @@ function setupMasterVisualizer() {
 
     function draw() {
         requestAnimationFrame(draw);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the entire canvas before drawing new frame
+        ctx.clearRect(0, 0, canvas.width, canvas.height); 
 
-        // Fetch the frequency data
         mAnalyser.getByteFrequencyData(mDataArray);
 
-        // Save the current context state and apply transformations
-        ctx.save();
-        ctx.scale(1, -1);  // Flip the y-axis
-        ctx.translate(0, -canvas.height);  // Translate to mirror the drawing
 
+        ctx.save();
+        ctx.scale(1, -1); 
+        ctx.translate(0, -canvas.height);  
         let barWidth = (canvas.width / mBufferLength) * 2.5;
         let barHeight;
-        let x = 0;  // Initial x position for bars
+        let x = 0; 
 
         for (let i = 0; i < mBufferLength; i++) {
-            barHeight = mDataArray[i];  // Get bar height from frequency data
-            ctx.fillStyle = 'rgb(100, 100, 100)';  // Red color for visualization
-            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  // Draw each bar
+            barHeight = mDataArray[i];  
+            ctx.fillStyle = 'rgb(100, 100, 100)';  
+            ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);  
             x += barWidth + 1;
         }
 
-        // Restore the context to its original state after drawing
         ctx.restore();
     }
 
-    draw(); // Start the visualization loop
+    draw(); 
 }
 
 
@@ -308,12 +304,12 @@ function setupMasterControls() {
         masterHighPass.frequency.setValueAtTime(0, audioContext.currentTime);
         masterHighPass.Q.setValueAtTime(1, audioContext.currentTime);
 
-        masterAnalyser = audioContext.createAnalyser();  // Create a global analyser
+        masterAnalyser = audioContext.createAnalyser();  
         masterGainNode.connect(masterAnalyser);
         masterAnalyser.connect(audioContext.destination);
 
 
-        // Connect filters in this order: high pass -> low pass -> gain -> destination
+       
         // masterHighPass.connect(masterLowPass);
         // masterLowPass.connect(masterGainNode);
         // // masterHighPass.connect(masterGainNode);
@@ -333,26 +329,24 @@ function setMasterVolume(volume) {
 function toggleMasterFilter(type) {
     const filterNode = (type === 'lowpass') ? masterLowPass : masterHighPass;
     
-    // Directly retrieve the current frequency value from the filterNode.
+
     const currentFreq = filterNode.frequency.value;
 
-    // Determine the new frequency based on the current frequency.
+
     let newFreq;
     if (type === 'lowpass') {
-        newFreq = currentFreq === 22050 ? 500 : 22050; // Toggle between 22050 and 500
+        newFreq = currentFreq === 22050 ? 500 : 22050; 
     } else {
-        newFreq = currentFreq === 0 ? 1000 : 0; // Toggle between 0 and 1000 for high pass
+        newFreq = currentFreq === 0 ? 1000 : 0; 
     }
 
-    // Log the current state before changing
     console.log("AudioContext State:", audioContext.state);
     console.log(`Master ${type} Filter Frequency before: ${currentFreq}`);
 
-    // Set the new frequency at the current time.
+
     filterNode.frequency.linearRampToValueAtTime(newFreq, audioContext.currentTime + 1);
 
 
-    // Log the new settings.
     console.log(`Toggled master ${type} filter to frequency: ${newFreq}`);
     console.log(`Master ${type} Filter Frequency after setting command: ${filterNode.frequency.value}`);
 }
@@ -363,7 +357,6 @@ function toggleMasterFilter(type) {
 
 
 
-// Initialize the beat indicator after user interaction
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     startBtn.addEventListener('click', () => {
@@ -394,29 +387,29 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('reset-btn').addEventListener('click', function () {
-        // Reset all sliders to default values
+
         sliders.forEach(slider => {
             if (slider.classList.contains('vertical')) {
-                slider.value = 1; // Default volume value
+                slider.value = 1; 
             } else if (slider.classList.contains('horizontal')) {
-                slider.value = 0; // Default pan value
+                slider.value = 0; 
             }
-            // Trigger the input event to ensure any associated functions are called
+          
             slider.dispatchEvent(new Event('input'));
         });
 
-        // Turn off all filters and remove active class from filter buttons
+ 
         filterButtons.forEach(button => {
             if (button.classList.contains('active')) {
                 button.classList.remove('active');
-                // Determine filter type and track based on button's onclick attribute
+               
                 const filterInfo = button.getAttribute('onclick').match(/toggleFilter\('(\w+)', '(\w+)'\)/);
                 if (filterInfo) {
                     const filterType = filterInfo[1];
                     const trackId = filterInfo[2];
                     toggleFilter(filterType, trackId);
                 } else {
-                    // Handle master filters
+                  
                     const masterFilterInfo = button.getAttribute('onclick').match(/toggleMasterFilter\('(\w+)'\)/);
                     if (masterFilterInfo) {
                         const masterFilterType = masterFilterInfo[1];
@@ -428,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('turn-off-tracks-btn').addEventListener('click', function () {
-        // Turn off all tracks that are currently on and remove active class from toggle track buttons
+       
         toggleTrackButtons.forEach(button => {
             if (button.classList.contains('active')) {
                 button.classList.remove('active');
